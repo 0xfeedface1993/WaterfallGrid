@@ -29,15 +29,8 @@ public struct WaterfallGrid<Data, ID, Content>: View where Data : RandomAccessCo
             GeometryReader { geometry in
                 self.grid(in: geometry)
                     .onPreferenceChange(ElementPreferenceKey.self, perform: { preferences in
-                        DispatchQueue.global(qos: .userInteractive).async {
-                            let (alignmentGuides, gridHeight) = self.alignmentsAndGridHeight(columns: self.style.columns,
-                                                                                             spacing: self.style.spacing,
-                                                                                             scrollDirection: self.scrollOptions.direction,
-                                                                                             preferences: preferences)
-                            DispatchQueue.main.async {
-                                self.alignmentGuides = alignmentGuides
-                                self.gridHeight = gridHeight
-                            }
+                        Task(priority: .high) {
+                            await elementPreferenceKeyUpdate(preferences)
                         }
                     })
             }
@@ -92,6 +85,20 @@ public struct WaterfallGrid<Data, ID, Content>: View where Data : RandomAccessCo
         let geometrySizeWidth = scrollDirection == .vertical ? geometrySize.width : geometrySize.height
         let width = max(0, geometrySizeWidth - (spacing * (CGFloat(columns) - 1)))
         return width / CGFloat(columns)
+    }
+    
+    func elementPreferenceKeyUpdate(_ preferences: [ElementPreferenceData]) async {
+        let (alignmentGuides, gridHeight) = self.alignmentsAndGridHeight(columns: self.style.columns,
+                                                                         spacing: self.style.spacing,
+                                                                         scrollDirection: self.scrollOptions.direction,
+                                                                         preferences: preferences)
+        await updateGuidesAndHeight(alignmentGuides, gridHeight: gridHeight)
+    }
+    
+    @MainActor
+    func updateGuidesAndHeight(_ alignmentGuides: [AnyHashable: CGPoint], gridHeight: CGFloat) async {
+        self.alignmentGuides = alignmentGuides
+        self.gridHeight = gridHeight
     }
 }
 
