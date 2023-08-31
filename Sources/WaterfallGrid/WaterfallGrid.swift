@@ -29,7 +29,7 @@ public struct WaterfallGrid<Data, ID, Content>: View where Data : RandomAccessCo
             GeometryReader { geometry in
                 self.grid(in: geometry)
                     .onPreferenceChange(ElementPreferenceKey.self, perform: { preferences in
-                        Task(priority: .high) {
+                        Task(priority: .userInitiated) {
                             await elementPreferenceKeyUpdate(preferences)
                         }
                     })
